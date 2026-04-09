@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model project {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  prompt      String?
+  backlog     Json?
+  userId      String
+  user        user     @relation(fields: [userId], references: [id])
+}
+
+model user {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  createdAt     DateTime       @default(now())
+  project       project[]
+  method        AuthMethod[]
+  subscription  Subscription?
+  refreshTokens RefreshToken[]
+}
+
+model AuthMethod {
+  id         String       @id @default(cuid())
+  createdAt  DateTime     @default(now())
+  provider   AuthProvider
+  providerId String?
+  password   String?
+  userId     String
+  user       user         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, provider])
+}
+
+model KeyStore {
+  id         String   @id @default(cuid())
+  kid        String   @unique
+  publicKey  String
+  privateKey String
+  createdAt  DateTime @default(now())
+  active     Boolean  @default(true)
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  stripeSubscriptionId String @unique
+  stripePriceId        String
+
+  status           String
+  currentPeriodEnd DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user user @relation(fields: [userId], references: [id])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id])
+}
+
+enum AuthProvider {
+  GOOGLE
+  LOCAL
+  GITHUB
+}
