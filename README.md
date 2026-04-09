@@ -56,14 +56,22 @@ To maintain a high security posture, Spec2Backlog features an **automated key ro
     ```
 
 3.  **Environment Configuration**
-    Create a `.env` file in the `server` directory:
+    Create a `.env` file in the `server` directory using the following template:
     ```env
     DATABASE_URL="postgresql://user:password@localhost:5432/spec2backlog"
     GEMINI_API_KEY="your_api_key"
-    STRIPE_SECRET_KEY="your_stripe_key"
     JWT_SECRET="initial_secret"
-    REDIS_URL="redis://localhost:6379"
-    ENCRYPTION_KEY="your_aes_encryption_key"
+    CLIENT_URL="http://localhost:5173"
+    
+    # OAuth
+    GOOGLE_CLIENT_ID="your_google_id"
+    GOOGLE_CLIENT_SECRET="your_google_secret"
+    GITHUB_CLIENT_ID="your_github_id"
+    GITHUB_CLIENT_SECRET="your_github_secret"
+
+    # Stripe
+    STRIPE_SECRET_KEY="your_stripe_key"
+    STRIPE_WEBHOOK_SECRET="your_webhook_secret"
     ```
 
 4.  **Database Migration**
