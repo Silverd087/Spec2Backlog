@@ -91,7 +91,3 @@ To maintain a high security posture, Spec2Backlog features an **automated key ro
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
----
-
-### Project Status
-*Spec2Backlog is currently in active development. Planned updates include direct export functionality to Jira and Trello.*
