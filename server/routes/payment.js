@@ -47,53 +47,49 @@ paymentRouter.get('/pricing-tiers', (req, res) => {
     return res.status(200).json({ tiers: [...subscriptions.values()] })
 })
 
+const handleCheckoutSessionCompleted = async (session) => {
+    const { userId } = session.metadata
+    const subscription = await stripe.subscriptions.retrieve(session.subscription)
+    const priceId = subscription.items.data[0].price.id
+
+    await prisma.subscription.upsert({
+        where: { userId },
+        update: {
+            stripeSubscriptionId: session.subscription,
+            stripePriceId: priceId,
+            status: subscription.status,
+            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            updatedAt: new Date(subscription.current_period_end * 1000),
+        },
+        create: {
+            userId,
+            stripeSubscriptionId: session.subscription,
+            stripePriceId: priceId,
+            status: subscription.status,
+            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        },
+    })
+}
+
 paymentRouter.post('/webhook', async (req, res) => {
-    console.log("webhook endpoint hit")
     const sig = req.headers["stripe-signature"]
     let event
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
-    }
-    catch (error) {
-        console.log("Error", error.message)
+    } catch (error) {
         return res.status(400).send(`Webhook error: ${error.message}`)
     }
-    if (event.type == "checkout.session.completed") {
-        const session = event.data.object
-        await handleCheckoutSessionCompleted(session)
-    }
-    res.status(200).send()
-})
 
-const handCheckoutSessionCompleted = async (session) => {
-    const { userId, planName } = session.metadata
-    const subscription = await stripe.subscriptions.retrieve(session.subscriptionId)
-
-    await prisma.subscription.upsert({
-        where: {
-            userId: userId
-        },
-        update: {
-            stripeSubscriptionId: session.subscriptionId,
-            stripePriceId: subscription.items.data[0].price.id,
-            status: subscription.status,
-            currentPeriodEnd: subscription.current_period_end,
-            createdAt: subscription.created,
-            updatedAt: subscription.updated
-
-        },
-        create: {
-            stripeSubscriptionId: session.subscriptionId,
-            stripePriceId: subscription.items.data[0].price.id,
-            status: subscription.status,
-            currentPeriodEnd: subscription.current_period_end,
-            createdAt: subscription.created,
-            updatedAt: subscription.updated,
-            userId: userId
+    try {
+        if (event.type === "checkout.session.completed") {
+            await handleCheckoutSessionCompleted(event.data.object)
         }
-    })
-}
-
+        return res.status(200).send()
+    } catch (error) {
+        console.error("Error handling webhook:", error)
+        return res.status(500).send()
+    }
+})
 
 
 module.exports = paymentRouter
